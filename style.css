@@ -52,6 +52,8 @@ svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
 .textbtn.danger { color: var(--danger); }
 .textbtn.armed, .btn.armed { color: #fff; background: #c62828; border-color: #c62828; }
 .tip { font-size: 12px; color: var(--danger); padding: 0 12px 4px; }
+.btn.ready.armed { color: #fff; background: #e65100; border-color: #e65100; }
+.actions .tip { color: var(--warn); text-align: center; font-weight: 600; padding: 0 4px; }
 
 /* ---------- chips + tabs ---------- */
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 8px 12px 4px; scrollbar-width: none; }

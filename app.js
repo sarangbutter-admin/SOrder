@@ -362,7 +362,7 @@
     else if (hold && col === 'ACCEPTED') main = '<button class="btn holdbtn block" disabled>HOLD</button>' + (pinHold ? '<button class="textbtn block" style="width:100%" data-act="startpin" data-id="' + esc(o.id) + '">Start anyway (no PIN)</button>' : '');
     else if (hold && col === 'NEW') main = '<button class="btn holdbtn block" disabled>HOLD</button><button class="textbtn block" style="width:100%" data-act="accept" data-id="' + esc(o.id) + '">Accept anyway</button>';
     else if (col === 'NEW') main = '<button class="btn accept block" data-act="accept" data-id="' + esc(o.id) + '">ACCEPT</button>';
-    else if (col === 'ACCEPTED') main = '<button class="btn ready block" data-act="ready" data-id="' + esc(o.id) + '">READY</button>';
+    else if (col === 'ACCEPTED') main = armedBtn('ready:' + o.id, 'btn ready block', 'READY', 'TAP AGAIN: READY', 'data-id="' + esc(o.id) + '" data-do="ready"');
     else if (col === 'READY') main = '<div class="actions two"><button class="btn line" data-act="undo" data-id="' + esc(o.id) + '">Undo</button><button class="btn done" data-act="done" data-id="' + esc(o.id) + '">DONE</button></div>';
     else main = '<button class="btn line block" style="min-height:52px;font-size:16px" data-act="undo" data-id="' + esc(o.id) + '">Undo</button>';
     return '<article class="ticket' + (col === 'NEW' ? ' new' : '') + (hold ? ' onhold' : '') + (cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-id="' + esc(o.id) + '">' +
