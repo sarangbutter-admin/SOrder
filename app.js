@@ -412,7 +412,7 @@
     const items = ticketItemsHTML(o);
     const main = ticketActionsHTML(o, col, st);
     const summary = (o.items || []).map((i) => (i.qty > 0 ? i.qty + '× ' : '') + i.name).join(', ');
-    return '<article class="ticket trow' + (col === 'NEW' ? ' new' : '') + (st.hold ? ' onhold' : '') + (st.cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-id="' + esc(o.id) + '">' +
+    return '<article class="ticket trow' + (col === 'NEW' ? ' new' : '') + (st.hold ? ' onhold' : '') + (st.cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-act="expand" data-id="' + esc(o.id) + '">' +
       '<div class="trow-head">' +
         '<div class="trow-meta">' +
           '<div class="trow-top">' +
@@ -431,9 +431,10 @@
         '</div>' +
         '<div class="trow-side">' +
           '<div class="actions">' + main + '</div>' +
-          '<button class="icon-btn" data-act="expand" data-id="' + esc(o.id) + '" aria-expanded="' + exp + '" aria-label="' + (exp ? 'Hide details' : 'Show details') + '">' + icon(exp ? 'chevUp' : 'chevDown') + '</button>' +
         '</div>' +
       '</div>' +
+      '<div class="trow-toggle-wrap"><button class="trow-toggle" data-act="expand" data-id="' + esc(o.id) + '" aria-expanded="' + exp + '">' +
+        (exp ? 'Hide details' : 'Tap here') + icon(exp ? 'chevUp' : 'chevDown') + '</button></div>' +
       ((o.refreshResult && now() - (o.refreshResultAt || 0) < 30000) ? '<div class="act">' + esc(o.refreshResult) + '</div>' : '') +
       ((o.activity && now() - (o.activityAt || 0) < 90000) ? '<div class="act"><span class="spin"></span>' + esc(o.activity) + '…</div>' : '') +
       (o.lastPrintError ? '<div class="perr"><b>Print failed</b> <button class="ydet" data-act="perr" data-id="' + esc(o.id) + '">' + (S.perr && S.perr[o.id] ? 'hide' : 'details') + '</button>' + (S.perr && S.perr[o.id] ? '<div class="m">' + esc(o.lastPrintError) + '</div>' : '') + '</div>' : '') +

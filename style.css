@@ -139,7 +139,7 @@ html[data-theme="light"] .attn { background: #ffe0b2; }
 @media (min-width: 1560px) { .board.wide .col { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; } }
 
 .listboard { width: 100%; max-width: 960px; margin: 0 auto; padding: 6px 12px 24px; display: grid; gap: 8px; }
-.trow { padding: 10px 12px; }
+.trow { padding: 10px 12px; cursor: pointer; }
 .trow-head { display: flex; flex-direction: column; gap: 10px; }
 .trow-meta { min-width: 0; flex: 1; }
 .trow-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -153,6 +153,11 @@ html[data-theme="light"] .attn { background: #ffe0b2; }
 .trow-side { display: flex; align-items: center; gap: 8px; }
 .trow-side .actions { margin-top: 0; flex: 1; }
 .trow-side .btn.block { min-height: 48px; font-size: 16px; }
+.trow-toggle-wrap { display: flex; justify-content: center; margin-top: 8px; }
+.trow-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 22px; font-size: 14px; font-weight: 800; background: #eceff1; color: #111111; }
+html[data-theme="light"] .trow-toggle, .ticket.onhold .trow-toggle { background: #1b1b1f; color: #ffffff; }
+.ticket.cancelled .trow-toggle { background: #ffffff; color: #111111; }
+.trow-toggle svg.i { width: 20px; height: 20px; }
 .trow-exp { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 @media (min-width: 640px) {
   .trow-head { flex-direction: row; align-items: center; }
