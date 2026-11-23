@@ -60,6 +60,10 @@
     history: 'M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z',
     board: 'M10 18h5V5h-5v13zm-6 0h5V5H4v13zM16 5v13h5V5h-5z',
     plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    grid: 'M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z',
+    list: 'M3 14h4v-4H3v4zm0 5h4v-4H3v4zM3 9h4V5H3v4zm5 5h13v-4H8v4zm0 5h13v-4H8v4zM8 5v4h13V5H8z',
+    chevDown: 'M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z',
+    chevUp: 'M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z',
   };
   const icon = (n, cls, label) => '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24" ' + (label ? 'role="img" aria-label="' + esc(label) + '"' : 'aria-hidden="true"') + '><path d="' + PATH[n] + '"/></svg>';
 
@@ -68,7 +72,8 @@
   const HOSTED = location.protocol === 'https:' || params.has('hosted');
   const S = {
     mode: 'boot', // boot | start | demo | phone
-    src: null, data: null, view: 'board', filter: '', tab: 0,
+    src: null, data: null, view: 'board', layout: LS.get('layout') === 'list' ? 'list' : 'grid',
+    filter: '', tab: 0, listTab: 0, expanded: {},
     hist: { range: 'today', from: '', to: '' },
     menu: false, query: '', searchOpen: false, pauseUntil: 0, opMenu: false, overlay: null, overlayErr: '', connErr: '',
     sound: LS.get('sound') === '1', themePref: LS.get('theme'),
@@ -341,47 +346,104 @@
     return '<div><span class="prep mono" data-kind="prep" data-due="' + due + '"></span>' + (o.prepMinutes > 0 ? '<span class="prepof">of ' + o.prepMinutes + ' min</span>' : '') + '</div>';
   }
 
-  function ticketHTML(o, col) {
-    const l = look(o);
-    const items = (o.items || []).map((it) => '<div><div class="item"><span class="q">' + (it.qty > 0 ? it.qty + '×' : '•') + '</span><span>' + esc(it.name) + '</span></div>' +
-      (it.opts ? it.opts.split('\n').map((l) => '<div class="opt">' + esc(l) + '</div>').join('') : '') +
-      (it.note ? '<div class="note">Note: ' + esc(it.note) + '</div>' : '') + '</div>').join('');
+  function ticketState(o, col) {
+    const settings = (S.data && S.data.settings) || {};
+    const pinHold = !!settings.gofoodHold && o.platform === 'gofood' && o.pinWait && !o.pin;
+    const cancelled = o.status === 'CANCELLED' && o.cancelOpen;
+    const hold = !cancelled && (o.stage === 'HOLD' || pinHold) && (col === 'NEW' || col === 'ACCEPTED');
+    return { pinHold, cancelled, hold };
+  }
+
+  function ticketChipsHTML(o, col, pinHold) {
     const chips = [];
     if (!col && o.driverStatus === 'ARRIVED') chips.push('<span class="badge ok">Driver arrived</span>');
     if (o.autoAccepted) chips.push('<span class="badge purple">Auto-accepted</span>');
     if (o.selfPickup) chips.push('<span class="badge" style="background:#00838f">Self pickup</span>');
-    const settings = (S.data && S.data.settings) || {};
-    const pinHold = !!settings.gofoodHold && o.platform === 'gofood' && o.pinWait && !o.pin;
     if (o.pinWait && !o.pin && !pinHold) chips.push(o.platform === 'gofood' ? '<span class="badge bad">WAITING PIN</span>' : '<span class="badge grey">Reading details…</span>');
     if (o.status === 'OUT_FOR_DELIVERY') chips.push('<span class="badge blue">Out for delivery</span>');
     if (!col) chips.push('<span class="badge grey">' + esc({ READY: 'Ready', OUT_FOR_DELIVERY: 'Out for delivery', DELIVERED: o.deliveryConfirmed ? 'Delivered' : 'Done', CANCELLED: 'Cancelled' }[o.status] || o.status) + '</span>');
-    let main = '';
-    const cancelled = o.status === 'CANCELLED' && o.cancelOpen;
-    const hold = !cancelled && (o.stage === 'HOLD' || pinHold) && (col === 'NEW' || col === 'ACCEPTED');
-    if (cancelled) main = '<button class="btn gotit block" data-act="gotit" data-id="' + esc(o.id) + '">GOT IT</button>';
-    else if (hold && col === 'ACCEPTED') main = '<button class="btn holdbtn block" disabled>HOLD</button>' + (pinHold ? '<button class="textbtn block" style="width:100%" data-act="startpin" data-id="' + esc(o.id) + '">Start anyway (no PIN)</button>' : '');
-    else if (hold && col === 'NEW') main = '<button class="btn holdbtn block" disabled>HOLD</button><button class="textbtn block" style="width:100%" data-act="accept" data-id="' + esc(o.id) + '">Accept anyway</button>';
-    else if (col === 'NEW') main = '<button class="btn accept block" data-act="accept" data-id="' + esc(o.id) + '">ACCEPT</button>';
-    else if (col === 'ACCEPTED') main = armedBtn('ready:' + o.id, 'btn ready block', 'READY', 'TAP AGAIN: READY', 'data-id="' + esc(o.id) + '" data-do="ready"');
-    else if (col === 'READY') main = '<div class="actions two"><button class="btn line" data-act="undo" data-id="' + esc(o.id) + '">Undo</button><button class="btn done" data-act="done" data-id="' + esc(o.id) + '">DONE</button></div>';
-    else main = '<button class="btn line block" style="min-height:52px;font-size:16px" data-act="undo" data-id="' + esc(o.id) + '">Undo</button>';
-    return '<article class="ticket' + (col === 'NEW' ? ' new' : '') + (hold ? ' onhold' : '') + (cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-id="' + esc(o.id) + '">' +
+    return chips.length ? '<div class="chipline">' + chips.join('') + '</div>' : '';
+  }
+
+  function ticketActionsHTML(o, col, st) {
+    if (st.cancelled) return '<button class="btn gotit block" data-act="gotit" data-id="' + esc(o.id) + '">GOT IT</button>';
+    if (st.hold && col === 'ACCEPTED') return '<button class="btn holdbtn block" disabled>HOLD</button>' + (st.pinHold ? '<button class="textbtn block" style="width:100%" data-act="startpin" data-id="' + esc(o.id) + '">Start anyway (no PIN)</button>' : '');
+    if (st.hold && col === 'NEW') return '<button class="btn holdbtn block" disabled>HOLD</button><button class="textbtn block" style="width:100%" data-act="accept" data-id="' + esc(o.id) + '">Accept anyway</button>';
+    if (col === 'NEW') return '<button class="btn accept block" data-act="accept" data-id="' + esc(o.id) + '">ACCEPT</button>';
+    if (col === 'ACCEPTED') return armedBtn('ready:' + o.id, 'btn ready block', 'READY', 'TAP AGAIN: READY', 'data-id="' + esc(o.id) + '" data-do="ready"');
+    if (col === 'READY') return '<div class="actions two"><button class="btn line" data-act="undo" data-id="' + esc(o.id) + '">Undo</button><button class="btn done" data-act="done" data-id="' + esc(o.id) + '">DONE</button></div>';
+    return '<button class="btn line block" style="min-height:52px;font-size:16px" data-act="undo" data-id="' + esc(o.id) + '">Undo</button>';
+  }
+
+  function ticketItemsHTML(o) {
+    return (o.items || []).map((it) => '<div><div class="item"><span class="q">' + (it.qty > 0 ? it.qty + '×' : '•') + '</span><span>' + esc(it.name) + '</span></div>' +
+      (it.opts ? it.opts.split('\n').map((l) => '<div class="opt">' + esc(l) + '</div>').join('') : '') +
+      (it.note ? '<div class="note">Note: ' + esc(it.note) + '</div>' : '') + '</div>').join('');
+  }
+
+  function ticketHTML(o, col) {
+    const l = look(o);
+    const st = ticketState(o, col);
+    const items = ticketItemsHTML(o);
+    const main = ticketActionsHTML(o, col, st);
+    return '<article class="ticket' + (col === 'NEW' ? ' new' : '') + (st.hold ? ' onhold' : '') + (st.cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-id="' + esc(o.id) + '">' +
       '<div class="tband" style="background:' + l.color + ';color:' + onColor(l.color) + '"><span class="ttl">' + esc(l.title) + '</span>' + (o.sourceName ? '<span class="src">' + esc(o.sourceName) + '</span>' : '') + '<button class="rfo" data-act="refreshOrder" data-id="' + esc(o.id) + '" aria-label="Refresh this order, ' + (o.refreshCount || 0) + ' used" style="color:' + onColor(l.color) + '">' + icon('refresh') + '</button></div>' +
       ((o.refreshResult && now() - (o.refreshResultAt || 0) < 30000) ? '<div class="act">' + esc(o.refreshResult) + '</div>' : '') +
       ((o.activity && now() - (o.activityAt || 0) < 90000) ? '<div class="act"><span class="spin"></span>' + esc(o.activity) + '…</div>' : '') +
       '<div class="tbody"><div class="row"><div class="no">#' + esc(o.orderNo || '-') + '</div><div class="age mono" data-kind="age" data-since="' + o.createdAt + '" data-work="' + (col === 'NEW' || col === 'ACCEPTED' ? 1 : 0) + '"></div></div>' +
       '<div class="sub">' + esc(o.customerName || 'Customer') + ' · ' + o.itemCount + ' items' + ((o.itemCount > 0 && (o.items || []).length && (o.items || []).reduce((n, i) => n + Math.max(1, i.qty || 1), 0) < o.itemCount) ? ' (only ' + (o.items || []).reduce((n, i) => n + Math.max(1, i.qty || 1), 0) + ' listed)' : '') + '</div>' +
-      (cancelled ? '<div class="cxl"><b>CANCELLED</b>' + (o.cancelReason ? '<div>Why: ' + esc(o.cancelReason) + '</div>' : '') + '<div class="m">Check the ' + esc((PLAT[o.platform] || {}).label || '') + ' app. Stop preparing this order.</div></div>'
-        : prepHTML(o, col, pinHold) + driverHTML(o, col)) +
+      (st.cancelled ? '<div class="cxl"><b>CANCELLED</b>' + (o.cancelReason ? '<div>Why: ' + esc(o.cancelReason) + '</div>' : '') + '<div class="m">Check the ' + esc((PLAT[o.platform] || {}).label || '') + ' app. Stop preparing this order.</div></div>'
+        : prepHTML(o, col, st.pinHold) + driverHTML(o, col)) +
       (o.pin ? '<div class="pinrow">PIN<span class="pin mono">' + esc(o.pin) + '</span></div>' : '') +
       '<div class="items">' + (items || '<div class="noitems">Items not read yet. Open the order in the merchant app and they will appear.</div>') +
       (o.note ? '<div class="note order">Order note: ' + esc(o.note) + '</div>' : '') + '</div>' +
-      (chips.length ? '<div class="chipline">' + chips.join('') + '</div>' : '') +
+      ticketChipsHTML(o, col, st.pinHold) +
       (o.lastPrintError ? '<div class="perr"><b>Print failed</b> <button class="ydet" data-act="perr" data-id="' + esc(o.id) + '">' + (S.perr && S.perr[o.id] ? 'hide' : 'details') + '</button>' + (S.perr && S.perr[o.id] ? '<div class="m">' + esc(o.lastPrintError) + '</div>' : '') + '</div>' : '') +
       (o.attention ? '<div class="attn">' + icon('warn') + '<div class="t"><b>Needs attention</b><span class="m">' + esc(o.attention) + '. Finish it on the order phone.</span></div><button class="textbtn" data-act="retry" data-id="' + esc(o.id) + '">Retry</button><button class="textbtn" data-act="dismiss" data-id="' + esc(o.id) + '">Dismiss</button></div>' : '') +
       '<div class="actions">' + main + '</div>' +
       '<div class="more"><button class="textbtn" data-act="print" data-id="' + esc(o.id) + '">' + (o.printCount > 0 ? 'Reprint' : 'Print') + '</button><span class="grow"></span>' +
       (canDelete() ? armedBtn('delete:' + o.id, 'textbtn danger', 'Delete', 'Tap again to delete', 'data-id="' + esc(o.id) + '" data-do="delete"') : '') + '</div></div></article>';
+  }
+
+  function ticketRowHTML(o, col) {
+    const l = look(o);
+    const st = ticketState(o, col);
+    const exp = !!S.expanded[o.id];
+    const items = ticketItemsHTML(o);
+    const main = ticketActionsHTML(o, col, st);
+    const summary = (o.items || []).map((i) => (i.qty > 0 ? i.qty + '× ' : '') + i.name).join(', ');
+    return '<article class="ticket trow' + (col === 'NEW' ? ' new' : '') + (st.hold ? ' onhold' : '') + (st.cancelled ? ' cancelled' : '') + '" style="--sc:' + l.color + '" data-id="' + esc(o.id) + '">' +
+      '<div class="trow-head">' +
+        '<div class="trow-meta">' +
+          '<div class="trow-top">' +
+            '<span class="storepill" style="background:' + l.color + ';color:' + onColor(l.color) + '">' + esc(l.title) + '</span>' +
+            (o.sourceName ? '<span class="badge grey">' + esc(o.sourceName) + '</span>' : '') +
+            '<span class="age mono" data-kind="age" data-since="' + o.createdAt + '" data-work="' + (col === 'NEW' || col === 'ACCEPTED' ? 1 : 0) + '"></span>' +
+          '</div>' +
+          '<div class="trow-title">' +
+            '<span class="no">#' + esc(o.orderNo || '-') + '</span>' +
+            '<span class="sub">' + esc(o.customerName || 'Customer') + ' · ' + o.itemCount + ' items</span>' +
+            (o.pin ? '<span class="pin mono">PIN ' + esc(o.pin) + '</span>' : '') +
+          '</div>' +
+          (!exp && summary ? '<div class="trow-sum">' + esc(summary) + '</div>' : '') +
+          (st.cancelled ? '<div class="cxl"><b>CANCELLED</b>' + (o.cancelReason ? '<div>Why: ' + esc(o.cancelReason) + '</div>' : '') + '</div>' : prepHTML(o, col, st.pinHold) + driverHTML(o, col)) +
+          ticketChipsHTML(o, col, st.pinHold) +
+        '</div>' +
+        '<div class="trow-side">' +
+          '<div class="actions">' + main + '</div>' +
+          '<button class="icon-btn" data-act="expand" data-id="' + esc(o.id) + '" aria-expanded="' + exp + '" aria-label="' + (exp ? 'Hide details' : 'Show details') + '">' + icon(exp ? 'chevUp' : 'chevDown') + '</button>' +
+        '</div>' +
+      '</div>' +
+      ((o.refreshResult && now() - (o.refreshResultAt || 0) < 30000) ? '<div class="act">' + esc(o.refreshResult) + '</div>' : '') +
+      ((o.activity && now() - (o.activityAt || 0) < 90000) ? '<div class="act"><span class="spin"></span>' + esc(o.activity) + '…</div>' : '') +
+      (o.lastPrintError ? '<div class="perr"><b>Print failed</b> <button class="ydet" data-act="perr" data-id="' + esc(o.id) + '">' + (S.perr && S.perr[o.id] ? 'hide' : 'details') + '</button>' + (S.perr && S.perr[o.id] ? '<div class="m">' + esc(o.lastPrintError) + '</div>' : '') + '</div>' : '') +
+      (o.attention ? '<div class="attn">' + icon('warn') + '<div class="t"><b>Needs attention</b><span class="m">' + esc(o.attention) + '. Finish it on the order phone.</span></div><button class="textbtn" data-act="retry" data-id="' + esc(o.id) + '">Retry</button><button class="textbtn" data-act="dismiss" data-id="' + esc(o.id) + '">Dismiss</button></div>' : '') +
+      (exp ? '<div class="trow-exp"><div class="items">' + (items || '<div class="noitems">Items not read yet. Open the order in the merchant app and they will appear.</div>') +
+        (o.note ? '<div class="note order">Order note: ' + esc(o.note) + '</div>' : '') + '</div>' +
+        '<div class="more"><button class="textbtn" data-act="print" data-id="' + esc(o.id) + '">' + (o.printCount > 0 ? 'Reprint' : 'Print') + '</button>' +
+        '<button class="textbtn" data-act="refreshOrder" data-id="' + esc(o.id) + '">Refresh</button><span class="grow"></span>' +
+        (canDelete() ? armedBtn('delete:' + o.id, 'textbtn danger', 'Delete', 'Tap again to delete', 'data-id="' + esc(o.id) + '" data-do="delete"') : '') + '</div></div>' : '') +
+      '</article>';
   }
 
   function filterHTML() {
@@ -392,21 +454,33 @@
   }
 
   function boardHTML() {
-    const t = now(); const wide = window.matchMedia('(min-width: 800px)').matches;
+    const t = now();
+    const wide = window.matchMedia('(min-width: 900px)').matches;
+    const compact = window.matchMedia('(max-width: 599px)').matches;
     const orders = S.data.orders.filter((o) => (!S.filter || o.storeId === S.filter) && matchQ(o));
     const by = { NEW: [], ACCEPTED: [], READY: [] };
     orders.forEach((o) => { const c = colOf(o, t); if (c) by[c].push(o); });
     by.NEW.sort((a, b) => (b.cancelOpen ? 1 : 0) - (a.cancelOpen ? 1 : 0) || a.createdAt - b.createdAt); by.ACCEPTED.sort((a, b) => a.createdAt - b.createdAt); by.READY.sort((a, b) => b.updatedAt - a.updatedAt);
-    const col = (c, label, empty) => '<div class="col">' + (by[c.k].length ? by[c.k].map((o) => ticketHTML(o, c.k)).join('') : '<div class="empty">' + esc(empty) + '</div>') + '</div>';
+
+    if (S.layout === 'list') {
+      const all = by.NEW.map((o) => [o, 'NEW']).concat(by.ACCEPTED.map((o) => [o, 'ACCEPTED'])).concat(by.READY.map((o) => [o, 'READY']));
+      const listTabs = [['ALL', 'All', 'No active orders', all]].concat(COLS.map(([k, lbl, emp]) => [k, lbl, emp, by[k].map((o) => [o, k])]));
+      const idx = Math.min(S.listTab || 0, listTabs.length - 1);
+      const cur = listTabs[idx];
+      return '<div class="tabs" role="tablist">' + listTabs.map(([, lbl, , arr], i) => '<button class="tab" role="tab" data-act="listTab" data-arg="' + i + '" aria-selected="' + (idx === i) + '">' + lbl + ' (' + arr.length + ')</button>').join('') + '</div>' +
+        '<div class="listboard">' + (cur[3].length ? cur[3].map(([o, c]) => ticketRowHTML(o, c)).join('') : '<div class="empty">' + esc(cur[2]) + '</div>') + '</div>';
+    }
+
+    const col = (c, label, empty, cls) => '<div class="col ' + (cls || '') + '">' + (by[c.k].length ? by[c.k].map((o) => ticketHTML(o, c.k)).join('') : '<div class="empty">' + esc(empty) + '</div>') + '</div>';
     if (wide) {
       return '<div class="board wide">' + COLS.map(([k, label, empty]) => {
         const list = by[k]; const oldest = list.length && k !== 'READY' ? '<span class="old">oldest <span data-kind="oldest" data-since="' + Math.min.apply(null, list.map((o) => o.createdAt)) + '"></span></span>' : '';
-        return '<div><div class="colhead">' + label.toUpperCase() + '<span class="n">' + list.length + '</span>' + oldest + '</div>' + col({ k }, label, empty) + '</div>';
+        return '<div><div class="colhead">' + label.toUpperCase() + '<span class="n">' + list.length + '</span>' + oldest + '</div>' + col({ k }, label, empty, '') + '</div>';
       }).join('') + '</div>';
     }
     const k = COLS[Math.min(S.tab, 2)][0];
     return '<div class="tabs" role="tablist">' + COLS.map(([ck, label], i) => '<button class="tab" role="tab" data-act="tab" data-arg="' + i + '" aria-selected="' + (S.tab === i) + '">' + label + ' (' + by[ck].length + ')</button>').join('') + '</div>' +
-      '<div class="board">' + col({ k }, '', COLS[Math.min(S.tab, 2)][2]) + '</div>';
+      '<div class="board">' + col({ k }, '', COLS[Math.min(S.tab, 2)][2], 'grid-cards' + (compact ? ' compact' : '')) + '</div>';
   }
 
   // ----- history
@@ -429,14 +503,18 @@
   }
   function historyHTML() {
     const [lo, hi] = dayBounds();
+    const compact = window.matchMedia('(max-width: 599px)').matches;
     const list = S.data.orders.filter((o) => isHistory(o) && matchQ(o) && (!S.filter || o.storeId === S.filter) && o.createdAt >= lo && o.createdAt < hi).sort((a, b) => b.updatedAt - a.updatedAt);
     const r = S.hist.range;
     const chip = (k, label) => '<button class="chip" data-act="histrange" data-arg="' + k + '" aria-pressed="' + (r === k) + '">' + label + '</button>';
+    const body = list.length
+      ? (S.layout === 'list' ? '<div class="listboard">' + list.map((o) => ticketRowHTML(o, null)).join('') + '</div>' : '<div class="histlist' + (compact ? ' compact' : '') + '">' + list.map((o) => ticketHTML(o, null)).join('') + '</div>')
+      : '<div class="empty">No finished orders for ' + esc(histLabel().toLowerCase()) + '</div>';
     return '<div class="hist"><div class="bar">' + chip('today', 'Today') + chip('yesterday', 'Yesterday') + chip('custom', r === 'custom' ? esc(histLabel()) : 'Custom') + '</div>' +
       (r === 'custom' ? '<div class="bar"><label>From <input type="date" id="hfrom" value="' + esc(S.hist.from) + '"></label><label>To <input type="date" id="hto" value="' + esc(S.hist.to) + '"></label></div>' : '') +
       '<div class="bar"><span class="count">' + plural(list.length) + ' · ' + esc(histLabel()) + '</span></div>' +
       (list.length && canDelete() ? armedBtn('deleteMany', 'btn line small', 'Delete ' + plural(list.length), 'Tap again: delete ' + plural(list.length), 'data-do="deleteMany" data-arg="' + list.map((o) => o.id).join(',') + '"') : '') + '</div>' +
-      (list.length ? '<div class="histlist">' + list.map((o) => ticketHTML(o, null)).join('') + '</div>' : '<div class="empty">No finished orders for ' + esc(histLabel().toLowerCase()) + '</div>');
+      body;
   }
 
   function drawerHTML() {
@@ -444,7 +522,8 @@
     const d = S.data; const item = (act, ic, label, cur, arg) => '<button class="item-btn" data-act="' + act + '"' + (arg ? ' data-arg="' + arg + '"' : '') + (cur ? ' aria-current="true"' : '') + '>' + icon(ic) + '<span>' + label + '</span></button>';
     const who = d.user ? d.user + ' · ' + ({ ADMIN: 'Admin (owner)', MANAGER: 'Manager', STAFF: 'Staff' }[d.role] || d.role) : (S.src.demo ? 'Demo, nothing here is real' : 'Kitchen screen');
     return '<div class="scrim" data-act="closemenu"></div><nav class="drawer" aria-label="Menu"><h2>Rhea</h2><div class="who">' + esc(who) + '</div><hr>' +
-      item('view', 'board', 'Kitchen board', S.view === 'board', 'board') + item('view', 'history', 'History', S.view === 'history', 'history') + '<hr>' +
+      item('view', 'board', 'Kitchen board', S.view === 'board', 'board') + item('view', 'history', 'History', S.view === 'history', 'history') +
+      item('layout', S.layout === 'list' ? 'grid' : 'list', S.layout === 'list' ? 'Switch to grid view' : 'Switch to list view') + '<hr>' +
       item('sound', S.sound ? 'vol' : 'mute', S.sound ? 'Sound on (tap to mute)' : 'Turn sound on') +
       '<div class="volrow"><label for="vol">Alarm volume</label><input type="range" id="vol" min="10" max="100" step="10" value="' + Math.round(vol() * 100) + '"></div>' +
       item('testSound', 'vol', 'Test the alarm') +
@@ -478,9 +557,11 @@
     const d = S.data; const ringing = unacked().length > 0;
     return '<div class="top"><button class="icon-btn" data-act="menu" aria-label="Menu">' + icon('menu') + '</button>' +
       '<h1><span class="ttl">' + (S.view === 'history' ? 'History' : 'Kitchen') + '</span>' + (S.src.demo ? '<span class="badge demo-badge">DEMO</span>' : '<span class="badge ' + (S.connErr ? 'bad' : 'ok') + '">' + (S.connErr ? 'Offline' : 'Live') + '</span>') + '</h1>' +
-      opHTML() + '<button class="icon-btn" data-act="search" aria-label="' + (S.searchOpen ? 'Close search' : 'Search orders') + '">' + icon(S.searchOpen ? 'close' : 'search') + '</button>' +
+      opHTML() +
+      '<button class="icon-btn" data-act="layout" aria-label="' + (S.layout === 'list' ? 'Switch to grid view' : 'Switch to list view') + '" aria-pressed="' + (S.layout === 'list') + '">' + icon(S.layout === 'list' ? 'grid' : 'list') + '</button>' +
+      '<button class="icon-btn" data-act="search" aria-label="' + (S.searchOpen ? 'Close search' : 'Search orders') + '">' + icon(S.searchOpen ? 'close' : 'search') + '</button>' +
       '<button class="icon-btn" data-act="theme" aria-label="Switch dark / light">' + icon('theme') + '</button>' +
-      '<button class="icon-btn" data-act="sound" aria-label=""' + (S.sound ? 'Mute sound' : 'Turn sound on') + '" aria-pressed="' + S.sound + '">' + icon(S.sound ? 'vol' : 'mute') + '</button>' +
+      '<button class="icon-btn" data-act="sound" aria-label="' + (S.sound ? 'Mute sound' : 'Turn sound on') + '" aria-pressed="' + S.sound + '">' + icon(S.sound ? 'vol' : 'mute') + '</button>' +
       '<button class="icon-btn" data-act="refreshAll" aria-label="Refresh the order phones">' + icon('refresh') + '</button></div>';
   }
 
@@ -662,6 +743,9 @@
       case 'refreshStore': await act('refresh', '', arg); return toast('Refresh sent');
       case 'filter': S.filter = arg || ''; return render();
       case 'tab': S.tab = Number(arg); return render();
+      case 'listTab': S.listTab = Number(arg); return render();
+      case 'layout': S.layout = S.layout === 'list' ? 'grid' : 'list'; LS.set('layout', S.layout); S.menu = false; delete cache.body; return render();
+      case 'expand': S.expanded[id] = !S.expanded[id]; delete cache.body; return render();
       case 'histrange': S.hist.range = arg; if (arg === 'custom' && !S.hist.from) { const d = new Date(); S.hist.from = S.hist.to = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); } return render();
       case 'menu': S.menu = true; return render();
       case 'perr': S.perr = S.perr || {}; S.perr[id] = !S.perr[id]; delete cache.body; return render();
@@ -698,7 +782,8 @@
     if (e.target.id === 'hto') { S.hist.to = e.target.value; render(); }
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const b = $('.card .btn'); if (b && e.target.tagName === 'INPUT') b.click(); } if (e.key === 'Escape' && S.menu) { S.menu = false; render(); } });
-  window.matchMedia('(min-width: 800px)').addEventListener('change', () => { delete cache.body; render(); });
+  window.matchMedia('(min-width: 900px)').addEventListener('change', () => { delete cache.body; render(); });
+  window.matchMedia('(max-width: 599px)').addEventListener('change', () => { delete cache.body; render(); });
 
   // ------------------------------------------------------------------ start
   if (params.has('demo')) { S.mode = 'demo'; S.src = demoSource(); connect(); }
