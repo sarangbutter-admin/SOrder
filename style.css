@@ -30,7 +30,8 @@ svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
 .icon-btn { min-width: 48px; min-height: 48px; border: 0; background: transparent; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; position: relative; }
 .icon-btn:hover { background: var(--chip); }
 .badge { font-size: 12px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; }
-.badge.ok { background: #2e7d32; } .badge.bad { background: #c62828; } .badge.grey { background: #546e7a; } .badge.blue { background: #1565c0; } .badge.purple { background: #6a1b9a; }
+.badge.ok { background: #2e7d32; } .badge.bad { background: #c62828; } .badge.grey { background: #546e7a; } .badge.blue { background: #1565c0; } .badge.purple { background: #6a1b9a; } .badge.teal { background: #00838f; } .badge.sysdone { background: #3949ab; }
+.cxl-reason { margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--danger); }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 16px 0; }
 .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 10px 4px 5px; border-radius: 20px; background: var(--chip); border: 0; font-size: 13px; font-weight: 600; }
 .pill.tap { min-height: 48px; }

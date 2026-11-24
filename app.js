@@ -354,6 +354,19 @@
     return { pinHold, cancelled, hold };
   }
 
+  function statusLabel(o) {
+    if (o.status === 'DELIVERED') return o.deliveryConfirmed ? 'Delivered' : (o.autoDone ? 'System Done' : 'Done');
+    return { READY: 'Ready', OUT_FOR_DELIVERY: 'Out for delivery', CANCELLED: 'CANCELLED' }[o.status] || o.status;
+  }
+
+  function statusBadgeCls(o) {
+    if (o.status === 'CANCELLED') return 'bad';
+    if (o.status === 'DELIVERED') return o.deliveryConfirmed ? 'teal' : (o.autoDone ? 'sysdone' : 'grey');
+    if (o.status === 'READY') return 'ok';
+    if (o.status === 'OUT_FOR_DELIVERY') return 'blue';
+    return 'grey';
+  }
+
   function ticketChipsHTML(o, col, pinHold) {
     const chips = [];
     if (!col && o.driverStatus === 'ARRIVED') chips.push('<span class="badge ok">Driver arrived</span>');
@@ -361,7 +374,7 @@
     if (o.selfPickup) chips.push('<span class="badge" style="background:#00838f">Self pickup</span>');
     if (o.pinWait && !o.pin && !pinHold) chips.push(o.platform === 'gofood' ? '<span class="badge bad">WAITING PIN</span>' : '<span class="badge grey">Reading details…</span>');
     if (o.status === 'OUT_FOR_DELIVERY') chips.push('<span class="badge blue">Out for delivery</span>');
-    if (!col) chips.push('<span class="badge grey">' + esc({ READY: 'Ready', OUT_FOR_DELIVERY: 'Out for delivery', DELIVERED: o.deliveryConfirmed ? 'Delivered' : 'Done', CANCELLED: 'Cancelled' }[o.status] || o.status) + '</span>');
+    if (!col) chips.push('<span class="badge ' + statusBadgeCls(o) + '">' + esc(statusLabel(o)) + '</span>');
     return chips.length ? '<div class="chipline">' + chips.join('') + '</div>' : '';
   }
 
@@ -398,6 +411,7 @@
       '<div class="items">' + (items || '<div class="noitems">Items not read yet. Open the order in the merchant app and they will appear.</div>') +
       (o.note ? '<div class="note order">Order note: ' + esc(o.note) + '</div>' : '') + '</div>' +
       ticketChipsHTML(o, col, st.pinHold) +
+      (!st.cancelled && o.status === 'CANCELLED' && o.cancelReason ? '<div class="cxl-reason">Reason: ' + esc(o.cancelReason) + '</div>' : '') +
       (o.lastPrintError ? '<div class="perr"><b>Print failed</b> <button class="ydet" data-act="perr" data-id="' + esc(o.id) + '">' + (S.perr && S.perr[o.id] ? 'hide' : 'details') + '</button>' + (S.perr && S.perr[o.id] ? '<div class="m">' + esc(o.lastPrintError) + '</div>' : '') + '</div>' : '') +
       (o.attention ? '<div class="attn">' + icon('warn') + '<div class="t"><b>Needs attention</b><span class="m">' + esc(o.attention) + '. Finish it on the order phone.</span></div><button class="textbtn" data-act="retry" data-id="' + esc(o.id) + '">Retry</button><button class="textbtn" data-act="dismiss" data-id="' + esc(o.id) + '">Dismiss</button></div>' : '') +
       '<div class="actions">' + main + '</div>' +
@@ -428,6 +442,7 @@
           (!exp && summary ? '<div class="trow-sum">' + esc(summary) + '</div>' : '') +
           (st.cancelled ? '<div class="cxl"><b>CANCELLED</b>' + (o.cancelReason ? '<div>Why: ' + esc(o.cancelReason) + '</div>' : '') + '</div>' : prepHTML(o, col, st.pinHold) + driverHTML(o, col)) +
           ticketChipsHTML(o, col, st.pinHold) +
+          (!st.cancelled && o.status === 'CANCELLED' && o.cancelReason ? '<div class="cxl-reason">Reason: ' + esc(o.cancelReason) + '</div>' : '') +
         '</div>' +
         '<div class="trow-side">' +
           '<div class="actions">' + main + '</div>' +
@@ -539,7 +554,7 @@
   function matchQ(o) {
     const q = (S.query || '').trim().toLowerCase(); if (!q) return true;
     const st = (S.data.stores || []).find((s) => s.id === o.storeId);
-    const hay = [o.orderNo, o.displayNo, o.customerName, o.driverName, o.note, o.pin, o.sourceName, st && st.name, st && st.chip, (PLAT[o.platform] || {}).label]
+    const hay = [o.orderNo, o.displayNo, o.customerName, o.driverName, o.note, o.pin, o.sourceName, o.cancelReason, statusLabel(o), st && st.name, st && st.chip, (PLAT[o.platform] || {}).label]
       .concat((o.items || []).map((i) => i.name)).join(' ').toLowerCase();
     return q.split(/\s+/).every((w) => hay.indexOf(w) >= 0);
   }
