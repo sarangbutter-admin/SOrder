@@ -285,3 +285,11 @@ html[data-theme="light"] .trow-toggle, .ticket.onhold .trow-toggle { background:
 .rfo:hover { background: rgba(255,255,255,.18); } .rfo svg.i { width: 20px; height: 20px; }
 .rfo::after { content: ""; position: absolute; inset: -4px; }
 .tband .src { margin-left: auto; }
+
+/* ---------- compact buttons (same as the phone): 40 px to look at, a 48 px touch area around them ---------- */
+.btn { position: relative; min-height: 40px; border-radius: 8px; padding: 0 14px; font-size: 15px; }
+.btn::after { content: ""; position: absolute; inset: -4px 0; }
+.btn.block { min-height: 40px; font-size: 15px; }
+.grid-cards.compact .btn.block, .histlist.compact .btn.block, .trow-side .btn.block { min-height: 40px; font-size: 15px; }
+.btn.small { min-height: 36px; font-size: 14px; }
+@media (max-width: 600px) { .btn { min-height: 40px; font-size: 15px; padding: 0 12px; } }
