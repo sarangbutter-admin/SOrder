@@ -267,7 +267,7 @@
       return '<div class="marq ticker' + (red ? ' alarm' : '') + '" role="status" aria-label="' + esc(txt) + '"><span style="animation-duration:' + dur + 's">' +
         ti.map((i) => '<b class="mq-store" style="background:' + i[0] + ';color:' + onColor(i[0]) + '">' + esc(i[1]) + '</b>').join('&nbsp;&nbsp; • &nbsp;&nbsp;') + '</span></div>';
     }
-    if (!policyOpen()) { text = 'Closed now · open ' + (p.hours || '') + ' · no orders are read and no merchant app is visited'; cls += ' calm'; }
+    if (!policyOpen()) { text = 'Closed now (open ' + (p.hours || '') + '). No orders are read and no merchant app is visited.'; cls += ' calm'; }
     else {
       if (p.marquee === false) return '';
       const names = {}, colors = {}; (d.stores || []).forEach((s) => { names[s.id] = s.name || (PLAT[s.platform] || {}).label || s.id; colors[s.id] = s.color; });
@@ -275,8 +275,8 @@
       const items = Object.keys(st).filter((k) => now() - st[k].at <= (st[k].sticky ? STICKY_MS : STALE_MS) && (st[k].state === 'OFFLINE' || st[k].state === 'WARNING'))
         .map((k) => ({ name: names[k] || k, color: colors[k], off: st[k].state === 'OFFLINE' })).sort((a, b) => a.name.localeCompare(b.name));
       if (!items.length) return '';
-      text = '⚠ ' + items.map((i) => i.name + (i.off ? ' is CLOSED / PAUSED' : ' needs attention')).join(' • ');
-      html = '⚠&nbsp; ' + items.map((i) => {
+      text = 'Warning: ' + items.map((i) => i.name + (i.off ? ' is CLOSED / PAUSED' : ' needs attention')).join(' • ');
+      html = icon('warn', 'mq-ic') + items.map((i) => {
         const c = i.color ? hex6(i.color) : '#888888', fg = onColor(c);
         return '<b class="mq-store" style="background:' + c + ';color:' + fg + '">' + esc(i.name) + '</b> <b class="mq-bad">' + (i.off ? 'CLOSED / PAUSED' : 'NEEDS ATTENTION') + '</b>';
       }).join('&nbsp;&nbsp; • &nbsp;&nbsp;');
@@ -374,7 +374,7 @@
     // found on the merchant app's own list without a notification: it may be a second copy of an order already cooked (the label says the same)
     if (o.foundInApp) chips.push('<span class="badge bad attn-dup">ATTENTION · POSSIBLE DUPLICATED</span>');
     if (o.autoAccepted) chips.push('<span class="badge purple">Auto-accepted</span>');
-    if (o.selfPickup) chips.push('<span class="badge" style="background:#00838f">Self pickup</span>');
+    if (o.selfPickup) chips.push('<span class="badge teal">Self pickup</span>');
     if (o.pinWait && !o.pin && !pinHold) chips.push(o.platform === 'gofood' ? '<span class="badge bad">WAITING PIN</span>' : '<span class="badge grey">Reading details…</span>');
     if (!col) chips.push('<span class="badge ' + statusBadgeCls(o) + '">' + esc(statusLabel(o)) + '</span>');
     return chips.length ? '<div class="chipline">' + chips.join('') + '</div>' : '';
@@ -493,7 +493,7 @@
     if (wide) {
       return '<div class="board wide">' + COLS.map(([k, label, empty]) => {
         const list = by[k]; const oldest = list.length && k !== 'READY' ? '<span class="old">oldest <span data-kind="oldest" data-since="' + Math.min.apply(null, list.map((o) => o.createdAt)) + '"></span></span>' : '';
-        return '<div><div class="colhead">' + label.toUpperCase() + '<span class="n">' + list.length + '</span>' + oldest + '</div>' + col({ k }, label, empty, '') + '</div>';
+        return '<div><div class="colhead">' + label + '<span class="n">' + list.length + '</span>' + oldest + '</div>' + col({ k }, label, empty, '') + '</div>';
       }).join('') + '</div>';
     }
     const k = COLS[Math.min(S.tab, 2)][0];
@@ -588,12 +588,12 @@
     if (o === 'start') {
       const last = LS.get('kdsAddr') || '';
       return '<div class="card"><h2>Kitchen screen</h2><p>Try it with sample orders, or open the kitchen screen of your own KDS phone.</p>' +
-        '<div class="stack"><button class="btn block" style="background:#1565c0" data-act="startDemo">Try the demo</button></div>' +
-        '<hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><h2 style="font-size:19px">Open my KDS</h2>' +
+        '<div class="stack"><button class="btn line block" data-act="startDemo">Try the demo</button></div>' +
+        '<hr class="card-rule"><h2 class="card-subhead">Open my KDS</h2>' +
         '<p>Type the address shown on the KDS phone (Settings → Kitchen display), for example <b>192.168.1.50:8765</b>. You must be on the same WiFi. Your browser may ask to allow local network access.</p>' +
         '<label class="field"><span>KDS address</span><input id="addr" inputmode="url" autocomplete="off" autocapitalize="off" placeholder="192.168.1.50:8765" value="' + esc(last) + '"></label>' +
-        '<div class="err" id="oerr">' + esc(S.overlayErr) + '</div><button class="btn block" data-act="openKds" style="background:#2e7d32">Open my KDS</button>' +
-        '<p style="font-size:12px;margin-top:14px">Why a separate page? A page on https cannot talk to the phone\'s plain http address, so this opens the page the phone serves itself.</p></div>';
+        '<div class="err" id="oerr">' + esc(S.overlayErr) + '</div><button class="btn ready block" data-act="openKds">Open my KDS</button>' +
+        '<p class="card-footnote">Why a separate page? A page on https cannot talk to the phone\'s plain http address, so this opens the page the phone serves itself.</p></div>';
     }
     if (o === 'code') {
       return '<div class="card"><h2>Pairing code</h2><p>Type the code shown on the KDS phone (Settings → Kitchen display).</p>' +
