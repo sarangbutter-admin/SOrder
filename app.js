@@ -318,14 +318,14 @@
   }
 
   function driverHTML(o, col) {
-    if (!col) return '';
-    let stage = o.stage;
-    if (stage !== 'FINDING' && stage !== 'ON_WAY' && stage !== 'ARRIVED') {
+    if (!col || o.status === 'CANCELLED') return '';
+    let stage = (o.status === 'OUT_FOR_DELIVERY' || o.stage === 'PICKED_UP') ? 'PICKED_UP' : o.stage;
+    if (stage !== 'FINDING' && stage !== 'ON_WAY' && stage !== 'ARRIVED' && stage !== 'PICKED_UP') {
       if (o.driverStatus === 'ON_THE_WAY') stage = 'ON_WAY'; else if (o.driverStatus === 'ARRIVED') stage = 'ARRIVED'; else return '';
     }
-    const cls = stage === 'FINDING' ? 'finding' : stage === 'ON_WAY' ? 'onway' : 'arrived';
-    const label = stage === 'FINDING' ? 'Finding driver' : stage === 'ON_WAY' ? 'Driver on the way' : 'Driver arrived';
-    const since = o.stageAt > 0 ? o.stageAt : o.updatedAt;
+    const cls = stage === 'FINDING' ? 'finding' : stage === 'ON_WAY' ? 'onway' : stage === 'PICKED_UP' ? 'pickedup' : 'arrived';
+    const label = stage === 'FINDING' ? 'Finding driver' : stage === 'ON_WAY' ? 'Driver on the way' : stage === 'PICKED_UP' ? 'Out for delivery' : 'Driver arrived';
+    const since = (stage === 'PICKED_UP' && o.pickedUpAt > 0) ? o.pickedUpAt : (o.stageAt > 0 ? o.stageAt : o.updatedAt);
     return '<div class="driver ' + cls + '" data-kind="driver" data-since="' + since + '" data-eta="' + (stage === 'ON_WAY' ? o.etaAt : 0) + '">' +
       icon('moto') + '<div class="who"><div class="lbl">' + label + '</div>' + (o.driverName ? '<div class="nm">' + esc(o.driverName) + '</div>' : '') + '</div>' +
       '<span class="dtimer mono" data-kind="dtimer"></span></div>';
@@ -369,11 +369,10 @@
 
   function ticketChipsHTML(o, col, pinHold) {
     const chips = [];
-    if (!col && o.driverStatus === 'ARRIVED') chips.push('<span class="badge ok">Driver arrived</span>');
+    if (!col && o.driverStatus === 'ARRIVED' && o.status !== 'OUT_FOR_DELIVERY' && o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.stage !== 'PICKED_UP') chips.push('<span class="badge ok">Driver arrived</span>');
     if (o.autoAccepted) chips.push('<span class="badge purple">Auto-accepted</span>');
     if (o.selfPickup) chips.push('<span class="badge" style="background:#00838f">Self pickup</span>');
     if (o.pinWait && !o.pin && !pinHold) chips.push(o.platform === 'gofood' ? '<span class="badge bad">WAITING PIN</span>' : '<span class="badge grey">Reading details…</span>');
-    if (o.status === 'OUT_FOR_DELIVERY') chips.push('<span class="badge blue">Out for delivery</span>');
     if (!col) chips.push('<span class="badge ' + statusBadgeCls(o) + '">' + esc(statusLabel(o)) + '</span>');
     return chips.length ? '<div class="chipline">' + chips.join('') + '</div>' : '';
   }

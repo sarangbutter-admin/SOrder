@@ -114,6 +114,10 @@ svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
 .driver.onway svg.i { color: #42a5f5; } .driver.onway .dtimer { background: #1565c0; color: #fff; }
 .driver.arrived svg.i { color: #ffc107; }
 .driver.arrived .dtimer { background: #ffc107; color: #1b1b1f; animation: slowpulse 2s ease-in-out infinite; }
+.driver.pickedup svg.i { color: #ffffff; }
+.driver.pickedup .dtimer { background: #ffffff; color: #111111; }
+html[data-theme="light"] .driver.pickedup svg.i { color: #111111; }
+html[data-theme="light"] .driver.pickedup .dtimer { background: #111111; color: #ffffff; }
 @keyframes slowpulse { 0%, 100% { background: #ffc107; } 50% { background: #ffe9a8; } }
 @media (prefers-reduced-motion: reduce) { .driver.arrived .dtimer { animation: none; } * { scroll-behavior: auto !important; transition: none !important; } }
 .attn { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(255,184,77,.18); }
