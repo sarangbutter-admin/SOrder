@@ -118,7 +118,7 @@
     const mk = (o) => Object.assign({
       id: '', platform: 'grab', orderNo: '', customerName: '', itemCount: 0, items: [], note: '', pin: '', sourceName: 'Order phone',
       storeId: '', storeName: '', storeShort: '', storeColor: 0, attention: '', prepMinutes: 0, acceptedAt: 0, stage: 'NONE', stageAt: 0,
-      etaAt: 0, readyAt: 0, prepFrom: 0, driverName: '', driverStatus: 'NONE', status: 'NEW', acknowledged: false, autoAccepted: false,
+      etaAt: 0, readyAt: 0, prepFrom: 0, driverName: '', driverStatus: 'NONE', status: 'NEW', acknowledged: false, autoAccepted: false, foundInApp: false,
       printCount: 0, createdAt: t0, updatedAt: t0,
     }, o);
     const sc = (id) => stores.find((s) => s.id === id);
@@ -137,6 +137,7 @@
       base('r', 'b', 'B-7790', 'Siti', 18, [[1, 'Butter Croissant']], { acknowledged: true, status: 'ACCEPTED', prepMinutes: 15, acceptedAt: t0 - min(13.5), stage: 'ARRIVED', stageAt: t0 - 95000, driverName: 'Mas Dedi', driverStatus: 'ARRIVED' }),
       base('x', 'b', 'B-7750', 'Joko', 34, [[2, 'Cookie box']], { acknowledged: true, status: 'ACCEPTED', prepMinutes: 15, acceptedAt: t0 - min(30), attention: 'Extra time not set' }),
       base('g', 'c', 'GF-123', 'Dewi', 40, [[3, 'Nasi Goreng', 'extra spicy'], [1, 'Es Teh']], { acknowledged: true, status: 'ACCEPTED', pin: '4821', prepMinutes: 15, acceptedAt: t0 - min(13.5) }),
+      base('p', 'c', 'GF-210', 'Mira', 6, [[1, 'Nasi Goreng']], { acknowledged: true, status: 'ACCEPTED', prepMinutes: 10, acceptedAt: t0 - min(2), foundInApp: true }),
       base('d', 'a', 'A-4801', 'Rina', 25, [[4, 'Cookie box']], { acknowledged: true, status: 'READY', stage: 'ARRIVED', stageAt: t0 - 240000, updatedAt: t0 - min(5) }),
       base('y1', 'a', 'A-4700', 'Eko', 60 * 26, [[1, 'Chocolate Cake Slice']], { acknowledged: true, status: 'DELIVERED', updatedAt: t0 - 3600000 * 25 }),
     ];
@@ -370,6 +371,8 @@
   function ticketChipsHTML(o, col, pinHold) {
     const chips = [];
     if (!col && o.driverStatus === 'ARRIVED' && o.status !== 'OUT_FOR_DELIVERY' && o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.stage !== 'PICKED_UP') chips.push('<span class="badge ok">Driver arrived</span>');
+    // found on the merchant app's own list without a notification: it may be a second copy of an order already cooked (the label says the same)
+    if (o.foundInApp) chips.push('<span class="badge bad attn-dup">ATTENTION · POSSIBLE DUPLICATED</span>');
     if (o.autoAccepted) chips.push('<span class="badge purple">Auto-accepted</span>');
     if (o.selfPickup) chips.push('<span class="badge" style="background:#00838f">Self pickup</span>');
     if (o.pinWait && !o.pin && !pinHold) chips.push(o.platform === 'gofood' ? '<span class="badge bad">WAITING PIN</span>' : '<span class="badge grey">Reading details…</span>');

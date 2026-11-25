@@ -30,6 +30,7 @@ svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
 .icon-btn { min-width: 48px; min-height: 48px; border: 0; background: transparent; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; position: relative; }
 .icon-btn:hover { background: var(--chip); }
 .badge { font-size: 12px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; }
+.badge.attn-dup { white-space: normal; line-height: 1.25; } /* long text: wraps inside the ticket instead of running out of it */
 .badge.ok { background: #2e7d32; } .badge.bad { background: #c62828; } .badge.grey { background: #546e7a; } .badge.blue { background: #1565c0; } .badge.purple { background: #6a1b9a; } .badge.teal { background: #00838f; } .badge.sysdone { background: #3949ab; }
 .cxl-reason { margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--danger); }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 16px 0; }
@@ -105,9 +106,11 @@ svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
 .hold .bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: #546e7a; color: #fff; font-weight: 800; font-size: 17px; }
 .hold .bar .grow { flex: 1; }
 .hold .why { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.driver { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.driver { display: flex; align-items: center; gap: 4px 8px; margin-top: 8px; flex-wrap: wrap; } /* a narrow ticket: the timer drops below the words instead of lying over them */
 .driver svg.i { width: 30px; height: 30px; }
-.driver .who { flex: 1; min-width: 0; }
+.driver .who { flex: 1 1 6.5em; min-width: 0; }
+.driver .dtimer { margin-left: auto; flex: none; }
+.driver .lbl { overflow-wrap: anywhere; }
 .driver .lbl { font-weight: 800; font-size: 15px; } .driver .nm { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dtimer { font-size: 18px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: var(--chip); }
 .driver.finding svg.i { color: var(--muted); }
@@ -122,7 +125,9 @@ html[data-theme="light"] .driver.pickedup .dtimer { background: #111111; color: 
 @media (prefers-reduced-motion: reduce) { .driver.arrived .dtimer { animation: none; } * { scroll-behavior: auto !important; transition: none !important; } }
 .attn { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(255,184,77,.18); }
 html[data-theme="light"] .attn { background: #ffe0b2; }
-.attn .t { flex: 1; } .attn b { display: block; }
+.attn { flex-wrap: wrap; } /* a narrow ticket: the buttons drop below the text instead of squeezing it and running out of the box */
+.attn .t { flex: 1 1 8em; min-width: 0; } .attn b { display: block; }
+.attn .textbtn { min-height: 44px; }
 .attn .m { font-size: 13px; color: var(--muted); }
 .chipline { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .actions { margin-top: 12px; display: grid; gap: 8px; }
