@@ -741,6 +741,9 @@
     try { await S.src.act(action, id, arg); } catch (e) { toast(e.status === 403 ? 'Not allowed for your role' : 'Could not do that: ' + e.message); }
     await poll();
   }
+  // a store-wide refresh waits while a ticket is active (same rule as the app: RefreshRules.refreshAllAllowed)
+  const ACTIVE_MSG = 'Active ticket exist: tap Refresh in the ticket card or mark the ticket Done';
+  function activeTicket() { return ((S.data && S.data.orders) || []).some((o) => o.status === 'NEW' || o.status === 'ACCEPTED' || o.status === 'READY' || o.status === 'OUT_FOR_DELIVERY'); }
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2600); }
 
   // ------------------------------------------------------------------ events
@@ -757,8 +760,8 @@
       case 'accept': case 'ready': case 'done': case 'undo': case 'dismiss': case 'acceptAll': case 'gotit': case 'startpin': case 'retry': return act(a, id, arg);
       case 'refreshOrder': { const o = (S.data.orders || []).find((x) => x.id === id); await act('refreshOrder', id, ''); return toast('Refresh sent for #' + ((o && o.orderNo) || '-')); }
       case 'print': await act('print', id); return toast('Sent to the KDS printer');
-      case 'refreshAll': await act('refresh', '', ''); return toast('Refresh sent to the order phones');
-      case 'refreshStore': await act('refresh', '', arg); return toast('Refresh sent');
+      case 'refreshAll': if (activeTicket()) return toast(ACTIVE_MSG); await act('refresh', '', ''); return toast('Refresh sent to the order phones');
+      case 'refreshStore': if (activeTicket()) return toast(ACTIVE_MSG); await act('refresh', '', arg); return toast('Refresh sent');
       case 'filter': S.filter = arg || ''; return render();
       case 'tab': S.tab = Number(arg); return render();
       case 'listTab': S.listTab = Number(arg); return render();
